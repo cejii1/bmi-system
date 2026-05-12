@@ -15,10 +15,15 @@ return new class extends Migration
             });
         }
 
-        // Backfill existing records
+        // Backfill existing records using DB-compatible date formatting
+        $driver = DB::getDriverName();
+        $dateExpr = match($driver) {
+            'sqlite' => "strftime('%Y-%m', assessed_date)",
+            default  => "DATE_FORMAT(assessed_date, '%Y-%m')",
+        };
         DB::table('bmi_records')
             ->whereNull('assessment_period')
-            ->update(['assessment_period' => DB::raw("DATE_FORMAT(assessed_date, '%Y-%m')")]);
+            ->update(['assessment_period' => DB::raw($dateExpr)]);
 
         // Index for fast lookups by period
         Schema::table('bmi_records', function (Blueprint $table) {
